@@ -13,30 +13,14 @@ icon="ghost"        # Default emoji to post messages. Don't wrap it with ':'. Se
 # ----------
 # Initialization
 # ----------
+account=""
 me=`basename $0`
 title=""
 mode="buffering"
 link=""
-textWrapper="\`\`\`"
+textWrapper=""
+# textWrapper="\`\`\`"
 parseMode=""
-
-if [[ -e "/etc/slacktee.conf" ]]; then
-    . /etc/slacktee.conf
-fi
-
-if [[ -n "$HOME" && -e "$HOME/.slacktee" ]]; then
-    . $HOME/.slacktee
-fi
-
-# Overwrite webhook_url if the environment variable SLACKTEE_WEBHOOK is set
-if [[ "$SLACKTEE_WEBHOOK" != "" ]]; then
-    webhook_url=$SLACKTEE_WEBHOOK
-fi
-
-# Overwrite upload_token if the environment variable SLACKTEE_TOKEN is set
-if [[ "$SLACKTEE_TOKEN" != "" ]]; then
-    upload_token=$SLACKTEE_TOKEN
-fi
 
 function show_help(){
     echo "usage: $me [options]"
@@ -45,6 +29,7 @@ function show_help(){
     echo "    -n, --no-buffering                Post input values without buffering."
     echo "    -f, --file                        Post input values as a file."
     echo "    -l, --link                        Add a URL link to the message."
+    echo "    -a, --account accout_name         Load specific values for differents accounts."
     echo "    -c, --channel channel_name        Post input values to this channel."
     echo "    -u, --username user_name          This username is used for posting."
     echo "    -i, --icon emoji_name             This icon is used for posting."
@@ -98,16 +83,20 @@ while [[ $# > 0 ]]; do
             link="$1"
             shift
             ;;
+    -a|--account)
+            account="$1"
+            shift
+            ;;
     -c|--channel)
-            channel="$1"
+            cmd_channel="$1"
             shift
             ;;
     -u|--username)
-            username="$1"
+            cmd_username="$1"
             shift
             ;;
     -i|--icon)
-            icon="$1"
+            cmd_icon="$1"
             shift
             ;;
     -t|--title)
@@ -143,6 +132,44 @@ while [[ $# > 0 ]]; do
         ;;
     esac
 done
+
+# ----------
+# Load configuration file
+# ----------
+
+if [[ -e "/etc/slacktee.conf" ]]; then
+    . /etc/slacktee.conf $account
+fi
+
+if [[ -n "$HOME" && -e "$HOME/.slacktee" ]]; then
+    . $HOME/.slacktee $account
+fi
+
+# Overwrite webhook_url if the environment variable SLACKTEE_WEBHOOK is set
+if [[ "$SLACKTEE_WEBHOOK" != "" ]]; then
+    webhook_url=$SLACKTEE_WEBHOOK
+fi
+
+# Overwrite upload_token if the environment variable SLACKTEE_TOKEN is set
+if [[ "$SLACKTEE_TOKEN" != "" ]]; then
+    upload_token=$SLACKTEE_TOKEN
+fi
+
+# ----------
+# Enforce command line options
+# ----------
+
+if [[ "$cmd_channel" != "" ]]; then
+    channel=$cmd_channel
+fi
+
+if [[ "$cmd_username" != "" ]]; then
+    username=$cmd_username
+fi
+
+if [[ "$cmd_icon" != "" ]]; then
+    icon=$cmd_icon
+fi
 
 # ----------
 # Validate configurations
@@ -218,4 +245,3 @@ elif [[ $mode == "file" ]]; then
     send_message "$text"
     rm $filename
 fi
-
